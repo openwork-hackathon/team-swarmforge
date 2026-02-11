@@ -3,9 +3,12 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import Navbar from "@/components/Navbar";
+import { useWallet } from "@/context/WalletContext";
 import { ALL_AGENTS, getTierInfo, type Agent } from "@/lib/agents";
+import { PLATFORM } from "@/lib/contracts";
 
 export default function AgentsPage() {
+  const { isConnected, connect } = useWallet();
   const [selectedTier, setSelectedTier] = useState<number | null>(null);
   const [search, setSearch] = useState("");
   const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
@@ -24,17 +27,30 @@ export default function AgentsPage() {
     return true;
   });
 
+  // Simulated earnings based on reputation + tasks
+  const getEarnings = (agent: Agent) => agent.tasksCompleted * 12 + agent.wins * 50;
+  const getHourlyRate = (agent: Agent) => {
+    const base = [5000, 3000, 2000, 1000, 500];
+    return base[agent.tier] || 500;
+  };
+
   return (
     <>
       <Navbar />
       <main className="relative z-10 mx-auto max-w-7xl px-6 pt-24">
-        <div className="mt-8">
-          <h1 className="text-3xl font-bold text-white">
-            Agent <span className="text-[#FFD700]">Registry</span>
-          </h1>
-          <p className="mt-2 text-sm text-zinc-500">
-            441 autonomous agents across 5 tiers. Each with persistent identity, memory, and reputation.
-          </p>
+        <div className="mt-8 flex items-end justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-white">
+              Agent <span className="text-[#FFD700]">Registry</span>
+            </h1>
+            <p className="mt-2 text-sm text-zinc-500">
+              441 autonomous agents. Hire them with $OPENWORK. Bet on them in the Arena.
+            </p>
+          </div>
+          <div className="text-right">
+            <div className="text-2xl font-bold text-[#FFD700]">{ALL_AGENTS.length}</div>
+            <div className="text-[10px] text-zinc-500">Total Agents</div>
+          </div>
         </div>
 
         {/* Tier filters */}
@@ -85,6 +101,8 @@ export default function AgentsPage() {
             const winRate = agent.wins + agent.losses > 0
               ? ((agent.wins / (agent.wins + agent.losses)) * 100).toFixed(1)
               : "0";
+            const earnings = getEarnings(agent);
+            const hourly = getHourlyRate(agent);
             return (
               <motion.div
                 key={agent.code}
@@ -105,13 +123,11 @@ export default function AgentsPage() {
                 <div className="mt-3 flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <span className="text-[10px] text-zinc-600">
-                      Rep: <span className="text-zinc-400">{agent.reputation}</span>
-                    </span>
-                    <span className="text-[10px] text-zinc-600">
                       W/L: <span className="text-[#059669]">{agent.wins}</span>/<span className="text-[#DC2626]">{agent.losses}</span>
                     </span>
+                    <span className="text-[10px] text-zinc-600">{winRate}%</span>
                   </div>
-                  <span className="text-[10px] text-zinc-600">{winRate}%</span>
+                  <span className="text-[10px] font-mono text-[#FFD700]">{hourly.toLocaleString()} $OW/hr</span>
                 </div>
                 <div className="mt-2 flex flex-wrap gap-1">
                   {agent.specialties.slice(0, 3).map((s) => (
@@ -119,6 +135,26 @@ export default function AgentsPage() {
                       {s}
                     </span>
                   ))}
+                </div>
+                <div className="mt-3 flex gap-2">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (!isConnected) connect();
+                    }}
+                    className="flex-1 rounded-lg bg-gradient-to-r from-[#FFD700] to-[#B8860B] py-1.5 text-[10px] font-semibold text-black transition-all hover:scale-[1.02]"
+                  >
+                    Hire
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (!isConnected) connect();
+                    }}
+                    className="flex-1 rounded-lg border border-[#DC2626]/30 bg-[#DC2626]/5 py-1.5 text-[10px] font-medium text-[#DC2626] transition-colors hover:bg-[#DC2626]/10"
+                  >
+                    Stake
+                  </button>
                 </div>
               </motion.div>
             );
@@ -136,7 +172,6 @@ export default function AgentsPage() {
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-6"
             onClick={() => setSelectedAgent(null)}
           >
@@ -148,6 +183,8 @@ export default function AgentsPage() {
             >
               {(() => {
                 const tier = getTierInfo(selectedAgent.tier);
+                const earnings = getEarnings(selectedAgent);
+                const hourly = getHourlyRate(selectedAgent);
                 return (
                   <>
                     <div className="flex items-center gap-3">
@@ -165,10 +202,10 @@ export default function AgentsPage() {
                       <div className="mt-1 text-xs text-zinc-600">Squad {selectedAgent.squad}</div>
                     )}
 
-                    <div className="mt-6 grid grid-cols-3 gap-4">
+                    <div className="mt-6 grid grid-cols-4 gap-3">
                       <div className="rounded-lg bg-white/[0.03] p-3 text-center">
                         <div className="text-lg font-bold text-[#FFD700]">{selectedAgent.reputation}</div>
-                        <div className="text-[10px] text-zinc-600">Reputation</div>
+                        <div className="text-[10px] text-zinc-600">Rep</div>
                       </div>
                       <div className="rounded-lg bg-white/[0.03] p-3 text-center">
                         <div className="text-lg font-bold text-[#059669]">{selectedAgent.wins}</div>
@@ -176,7 +213,11 @@ export default function AgentsPage() {
                       </div>
                       <div className="rounded-lg bg-white/[0.03] p-3 text-center">
                         <div className="text-lg font-bold text-white">{selectedAgent.tasksCompleted}</div>
-                        <div className="text-[10px] text-zinc-600">Tasks Done</div>
+                        <div className="text-[10px] text-zinc-600">Tasks</div>
+                      </div>
+                      <div className="rounded-lg bg-white/[0.03] p-3 text-center">
+                        <div className="text-lg font-bold text-[#FFD700]">{(earnings / 1000).toFixed(0)}K</div>
+                        <div className="text-[10px] text-zinc-600">$OW Earned</div>
                       </div>
                     </div>
 
@@ -191,12 +232,31 @@ export default function AgentsPage() {
                       </div>
                     </div>
 
-                    <button
-                      onClick={() => setSelectedAgent(null)}
-                      className="mt-8 w-full rounded-lg border border-white/10 py-2.5 text-sm text-zinc-400 hover:bg-white/5 transition-colors"
-                    >
-                      Close
-                    </button>
+                    <div className="mt-6 rounded-lg border border-[#FFD700]/20 bg-[#FFD700]/5 p-4">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-zinc-400">Hire Rate</span>
+                        <span className="text-sm font-bold text-[#FFD700]">{hourly.toLocaleString()} $OW/task</span>
+                      </div>
+                      <div className="mt-1 flex items-center justify-between">
+                        <span className="text-xs text-zinc-400">Min Job Payment</span>
+                        <span className="text-xs text-zinc-500">{PLATFORM.MIN_JOB_PAYMENT} $OW</span>
+                      </div>
+                    </div>
+
+                    <div className="mt-6 flex gap-3">
+                      <button
+                        onClick={() => setSelectedAgent(null)}
+                        className="flex-1 rounded-lg border border-white/10 py-2.5 text-sm text-zinc-400 hover:bg-white/5 transition-colors"
+                      >
+                        Close
+                      </button>
+                      <button
+                        onClick={() => { if (!isConnected) connect(); }}
+                        className="flex-1 rounded-lg bg-gradient-to-r from-[#FFD700] to-[#B8860B] py-2.5 text-sm font-semibold text-black transition-all hover:scale-[1.02]"
+                      >
+                        {isConnected ? "Hire Agent" : "Connect to Hire"}
+                      </button>
+                    </div>
                   </>
                 );
               })()}

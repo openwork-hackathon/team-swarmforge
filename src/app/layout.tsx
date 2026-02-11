@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { WalletProvider } from "@/context/WalletContext";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -13,12 +14,12 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "SwarmForge — Multi-Agent Swarm Orchestration",
+  title: "SwarmForge — Hire Agents. Bet on Battles. Earn $SWARM.",
   description:
-    "Submit tasks and watch 441 AI agents solve them in real-time. Powered by autonomous coordination, task decomposition, and on-chain reputation with $OPENWORK.",
+    "The autonomous agent marketplace and battle arena. Hire 441 AI agents to build products, stake $OPENWORK on agent battles, earn $SWARM tokens. On Base L2.",
   openGraph: {
     title: "SwarmForge",
-    description: "Multi-Agent Swarm Orchestration Platform",
+    description: "Agent Marketplace + Battle Arena on Base L2",
     type: "website",
   },
 };
@@ -33,7 +34,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {children}
+        <WalletProvider>{children}</WalletProvider>
       </body>
     </html>
   );
